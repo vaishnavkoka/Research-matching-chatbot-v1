@@ -11,10 +11,6 @@
 [![Live Demo](https://img.shields.io/badge/Live-Demo-2ea44f?style=flat-square)](https://research-matching-chatbot.example.com)
 
 </div>
-
-> **Live web app:** https://research-matching-chatbot.example.com
-> _(placeholder link — it will be replaced with the real hosted URL after deployment)_
-
 ---
 
 ## Table of Contents
