@@ -51,8 +51,7 @@ It answers by searching a knowledge base of real faculty profiles, pulling live 
 
 ## Live Demo
 
-The web application is hosted here: **https://research-matching-chatbot.example.com**
-_(placeholder — the working link will be added after deployment.)_
+The web application is hosted here: **(https://ace09328f1a41e51c7.gradio.live/)**
 
 ---
 
@@ -281,7 +280,7 @@ Research-matching-chatbot/
 
 This project was developed by the contributors as part of a hackathon/bootcamp learning experience. It is an independent student project and does not represent the official views, policies, or endorsements of the Indian Institute of Technology Gandhinagar (IITGN) or any affiliated faculty, department, or organization.
 
-All design decisions, implementation, and generated content are the sole responsibility of the project contributors.
+All design decisions, implementation, and content are the sole responsibility of the project contributors.
 
 ---
 
