@@ -11,7 +11,6 @@
 [![Live Demo](https://img.shields.io/badge/Live-Demo-2ea44f?style=flat-square)](https://research-matching-chatbot.example.com)
 
 </div>
----
 
 ## Table of Contents
 
