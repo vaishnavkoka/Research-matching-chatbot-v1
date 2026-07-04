@@ -1,0 +1,8 @@
+.env
+.venv/
+chroma_db/
+email_drafts/
+logged_decisions.jsonl
+__pycache__/
+*.pyc
+.gradio/
