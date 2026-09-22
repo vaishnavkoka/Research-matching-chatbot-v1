@@ -139,19 +139,29 @@ through both the terminal and web app end to end.
 ```bash
 git clone https://github.com/vaishnavkoka/Research-matching-chatbot-v1.git
 cd Research-matching-chatbot-v1
+```
 
+The quickest way to get everything ready is the setup script, which makes the
+virtual environment, installs the dependencies, and creates a `.env` for you:
+
+```bash
+bash setup.sh
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+```
+
+Or do the same steps by hand if you prefer:
+
+```bash
 python3 -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+cp .env.example .env
 ```
 
 ### 2. Add your keys
 
-```bash
-cp .env.example .env
-```
-
-Then edit `.env`:
+The steps above already created `.env`. Open it and fill in whichever keys you
+want (all of them are optional):
 
 - `GEMINI_API_KEY` — free from https://aistudio.google.com/apikey (or use `GROQ_API_KEY`)
 - `TAVILY_API_KEY` — free from https://tavily.com (optional; enables live web trends)
@@ -270,6 +280,7 @@ For actions like collaboration matches, gap findings, or emails, the assistant s
 Research-matching-chatbot/
 ├── main.py                       # Terminal (CLI) application
 ├── app_gradio.py                 # Web application (Gradio)
+├── setup.sh                      # One-shot setup (venv + deps + .env)
 ├── requirements.txt
 ├── .env.example                  # Template for your keys
 ├── LICENSE
