@@ -171,55 +171,67 @@ For actions like collaboration matches, gap findings, or emails, the assistant s
 
 ### CLI Output
 
-**Faculty search with match scores, and a live step-by-step trace.**
+**Student mode — a faculty search for NLP returns ranked matches with similarity scores, alongside a live step-by-step trace of every node and tool.**
 
 ![CLI - faculty search](CLI-output/1.png)
 
-**Follow-up detail lookup, and project suggestions grounded in faculty and papers.**
+**A follow-up detail lookup, then project ideas grounded in faculty expertise and live papers, with a note where departmental coverage is thin.**
 
 ![CLI - detail and project ideas](CLI-output/2.png)
 
-**Trend analysis using live papers and web search, then a collaboration request.**
+**Professor mode — trend analysis over live papers and web search, followed by a workload check on a named faculty member.**
 
-![CLI - trends and collaboration](CLI-output/3.png)
+![CLI - trends and workload](CLI-output/3.png)
 
-**Confirming a collaboration (which gets logged), and a departmental gap analysis.**
+**A workload answer, a collaboration request confirmed and logged through the human-in-the-loop pause, and a departmental gap analysis.**
 
-![CLI - confirm and gap analysis](CLI-output/4.png)
+![CLI - collaboration and gap analysis](CLI-output/4.png)
+
+**Declining a gap-finding at the confirmation step, then drafting and sending a collaboration email once confirmed.**
+
+![CLI - gap decline and email](CLI-output/5.png)
+
+**The collaboration email as it arrives in the inbox, with the reasoning and a ready-to-forward outreach draft.**
+
+![CLI - email received](CLI-output/6.png)
 
 ### Web UI Output
 
-**Assistant tab — faculty matches with scores and a live execution trace panel.**
+**Assistant tab — faculty matches with scores beside a live execution trace panel.**
 
 ![Web UI - assistant](Gradio-UI-output/1.png)
 
-**Follow-up: drilling into a specific match.**
+**Student mode — a scoped lookup for a named professor.**
 
-![Web UI - follow up detail](Gradio-UI-output/2.png)
+![Web UI - named lookup](Gradio-UI-output/2.png)
 
-**Scoped lookup for a named professor.**
+**A follow-up that drills into the first match from the previous turn.**
 
-![Web UI - named lookup](Gradio-UI-output/3.png)
+![Web UI - follow up detail](Gradio-UI-output/3.png)
 
-**Human-in-the-loop: Confirm / Cancel buttons appear before logging a match.**
+**Project suggestions grounded in faculty and papers, with a coverage signal.**
 
-![Web UI - confirmation buttons](Gradio-UI-output/4.png)
+![Web UI - project ideas](Gradio-UI-output/4.png)
 
-**Citation Graph tab — a live network of how papers on a topic connect.**
+**Professor mode — live research trends with real papers and citation counts.**
 
-![Web UI - citation graph](Gradio-UI-output/5.png)
+![Web UI - trends](Gradio-UI-output/5.png)
 
-**Email feature — the assistant confirms it sent the summary...**
+**Human-in-the-loop: Confirm / Cancel buttons appear before a match is logged.**
 
-![Web UI - email sent](Gradio-UI-output/email-sent-6.png)
+![Web UI - confirmation buttons](Gradio-UI-output/6.png)
 
-**...the email arrives in the inbox...**
+**The email step — confirming, then the assistant reports the summary was sent.**
 
-![Email received](Gradio-UI-output/email-received-7.png)
+![Web UI - email sent](Gradio-UI-output/7.png)
 
-**...with the full match summary and a ready-to-forward outreach draft.**
+**The email as it arrives, with the full match summary and outreach draft.**
 
-![Email content](Gradio-UI-output/email-content-8.png)
+![Web UI - email received](Gradio-UI-output/8.png)
+
+**Citation Graph tab — a live network of how papers on a topic connect: the most-cited anchor, what it builds on, and what built on it.**
+
+![Web UI - citation graph](Gradio-UI-output/9.png)
 
 ---
 
@@ -276,6 +288,8 @@ Research-matching-chatbot/
 This project was developed by the contributors as part of a hackathon/bootcamp learning experience. It is an independent student project and does not represent the official views, policies, or endorsements of the Indian Institute of Technology Gandhinagar (IITGN) or any affiliated faculty, department, or organization.
 
 All design decisions, implementation, and content are the sole responsibility of the project contributors.
+
+This is a preliminary project. It was built within the time and scope of a hackathon, so the faculty data, matching, and outputs are illustrative rather than exhaustive, and are expected to evolve.
 
 ---
 
