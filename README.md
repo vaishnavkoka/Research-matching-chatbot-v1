@@ -47,7 +47,7 @@ It answers by searching a knowledge base of real faculty profiles, pulling live 
 
 ### 🏆 Achievement
 
-**🥉 Third Prize — [Project/Competition Name]**
+**🥉 Third Prize — Building AI Agents: From LLMs to Deployable Multi-Agent Systems**
 
 This project was awarded **Third Prize** in recognition of its technical contribution and overall implementation.
 
