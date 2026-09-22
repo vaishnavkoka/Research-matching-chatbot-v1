@@ -7,7 +7,12 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![LangGraph](https://img.shields.io/badge/Built%20with-LangGraph-1C3C3C?style=flat-square)](https://langchain-ai.github.io/langgraph/)
+[![ChromaDB](https://img.shields.io/badge/RAG-ChromaDB-FFB000?style=flat-square)](https://www.trychroma.com/)
 [![Gradio](https://img.shields.io/badge/UI-Gradio-F97316?style=flat-square)](https://www.gradio.app/)
+[![LLM](https://img.shields.io/badge/LLM-Gemini%20%7C%20Groq-4285F4?style=flat-square)](https://aistudio.google.com/)
+[![Semantic Scholar](https://img.shields.io/badge/Data-Semantic%20Scholar-1857B6?style=flat-square)](https://www.semanticscholar.org/product/api)
+[![Status: Preliminary](https://img.shields.io/badge/Status-Preliminary-orange?style=flat-square)](#disclaimer)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)](https://github.com/vaishnavkoka/Research-matching-chatbot-v1/pulls)
 [![Third Prize](https://img.shields.io/badge/%F0%9F%A5%89-Third%20Prize-CD7F32?style=flat-square)](#-achievement)
 
 </div>
@@ -55,7 +60,22 @@ This project was awarded **Third Prize** in recognition of its technical contrib
 
 ## Live Demo
 
-The web application is hosted here: **(https://ace09328f1a41e51c7.gradio.live/)**
+There is no permanent hosted instance, so the demo runs locally. It takes about
+a minute to set up from a fresh clone — see [Getting Started](#getting-started),
+then:
+
+```bash
+python app_gradio.py     # web app at http://127.0.0.1:7860
+# or
+python main.py           # terminal app
+```
+
+To share a temporary public link from your own machine, launch with
+`GRADIO_SHARE=1 python app_gradio.py`. Gradio then prints a `*.gradio.live` URL
+that stays live only while your process is running.
+
+Prefer to see it first? The [Screenshots](#screenshots) section below walks
+through both the terminal and web app end to end.
 
 ---
 
