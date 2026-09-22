@@ -8,13 +8,14 @@
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![LangGraph](https://img.shields.io/badge/Built%20with-LangGraph-1C3C3C?style=flat-square)](https://langchain-ai.github.io/langgraph/)
 [![Gradio](https://img.shields.io/badge/UI-Gradio-F97316?style=flat-square)](https://www.gradio.app/)
-[![Live Demo](https://img.shields.io/badge/Live-Demo-2ea44f?style=flat-square)](https://research-matching-chatbot.example.com)
+[![Third Prize](https://img.shields.io/badge/%F0%9F%A5%89-Third%20Prize-CD7F32?style=flat-square)](#-achievement)
 
 </div>
 
 ## Table of Contents
 
 - [Overview](#overview)
+- [Achievement](#-achievement)
 - [Live Demo](#live-demo)
 - [Key Features](#key-features)
 - [Architecture and Workflow](#architecture-and-workflow)
@@ -41,6 +42,14 @@ The Research Matching Chatbot is a conversational assistant with two modes:
 - **Professor mode** — "What's trending in NLP?", "Could I collaborate with Dr. Batra?", "What are we missing in cybersecurity?"
 
 It answers by searching a knowledge base of real faculty profiles, pulling live research papers and web trends, and reasoning over both. Before it logs a decision or sends an email, it always pauses and asks the user to confirm. It runs both as a terminal application and as a web app that share the same underlying engine.
+
+---
+
+### 🏆 Achievement
+
+**🥉 Third Prize — [Project/Competition Name]**
+
+This project was awarded **Third Prize** in recognition of its technical contribution and overall implementation.
 
 ---
 
