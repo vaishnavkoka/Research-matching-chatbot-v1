@@ -41,6 +41,7 @@ def build_graph():
     g.add_node("faculty_rag", nodes.faculty_rag)
     g.add_node("scoped_lookup", nodes.scoped_lookup)
     g.add_node("project_suggestion", nodes.project_suggestion)
+    g.add_node("workload", nodes.workload_check)
     g.add_node("web_trends", nodes.web_trend_analysis)
     g.add_node("collaborative_matching", nodes.collaborative_matching)
     g.add_node("gap_analysis", nodes.gap_analysis)
@@ -55,6 +56,7 @@ def build_graph():
         "faculty_rag": "faculty_rag",
         "scoped_lookup": "scoped_lookup",
         "project_suggestion": "project_suggestion",
+        "workload": "workload",
         "web_trends": "web_trends",
         "collaborative_matching": "collaborative_matching",
         "synthesize": "synthesize",
@@ -64,6 +66,7 @@ def build_graph():
     g.add_edge("faculty_rag", "synthesize")
     g.add_edge("scoped_lookup", "synthesize")
     g.add_edge("project_suggestion", "synthesize")
+    g.add_edge("workload", "synthesize")
 
     # Professor trend sub-router.
     g.add_conditional_edges("web_trends", route_after_trend, {

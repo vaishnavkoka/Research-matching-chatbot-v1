@@ -7,7 +7,16 @@ the confirmation node we prompt in the terminal and resume with Command(resume=â
 """
 from __future__ import annotations
 
+import os
 import sys
+
+# Auto-relaunch under this project's own venv, so `python main.py` works no matter
+# which environment happens to be active in the shell. (Compare sys.prefix, since
+# venv pythons all symlink to the same base interpreter.)
+_VENV_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".venv")
+_VENV_PY = os.path.join(_VENV_DIR, "bin", "python")
+if os.path.exists(_VENV_PY) and os.path.abspath(sys.prefix) != os.path.abspath(_VENV_DIR):
+    os.execv(_VENV_PY, [_VENV_PY, os.path.abspath(__file__), *sys.argv[1:]])
 
 from langgraph.types import Command
 
@@ -101,8 +110,17 @@ def main() -> None:
             prior = {}
             print("(context reset)")
             continue
-        if low == ":mode":
-            print(f"(current mode: {prior.get('current_mode', 'student')})")
+        if low.startswith(":mode"):
+            arg = low.replace(":mode", "").strip()
+            if arg in ("student", "professor"):
+                prior["forced_mode"] = arg
+                print(f"(mode locked to: {arg})")
+            elif arg in ("auto", ""):
+                prior["forced_mode"] = None
+                print("(mode: auto-detect from your question)" if arg == "auto"
+                      else f"(mode: {'locked ' + prior['forced_mode'] if prior.get('forced_mode') else 'auto-detect'})")
+            else:
+                print("(usage: :mode student | professor | auto)")
             continue
 
         try:

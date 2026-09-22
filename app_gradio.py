@@ -13,7 +13,17 @@ from __future__ import annotations
 
 import contextlib
 import io
+import os
+import sys
 from uuid import uuid4
+
+# Auto-relaunch under this project's own venv, so `python app_gradio.py` works no
+# matter which environment is active. (Compare sys.prefix, since venv pythons all
+# symlink to the same base interpreter.)
+_VENV_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".venv")
+_VENV_PY = os.path.join(_VENV_DIR, "bin", "python")
+if os.path.exists(_VENV_PY) and os.path.abspath(sys.prefix) != os.path.abspath(_VENV_DIR):
+    os.execv(_VENV_PY, [_VENV_PY, os.path.abspath(__file__), *sys.argv[1:]])
 
 import gradio as gr
 from langgraph.types import Command
@@ -80,7 +90,10 @@ def _carry_forward(session: dict, result: dict) -> None:
         p["last_results"] = result["last_results"]
 
 
-def step(user_msg: str, history: list, session: dict):
+_MODE_MAP = {"Student": "student", "Professor": "professor"}
+
+
+def step(user_msg: str, history: list, session: dict, mode_choice: str = "Auto (detect)"):
     """One chat turn. Handles both a fresh query and a resume of the HITL pause."""
     session = session or _new_session()
     history = history or []
@@ -88,6 +101,8 @@ def step(user_msg: str, history: list, session: dict):
     if not user_msg:
         return history, "", session, gr.update(), gr.update(), ""
 
+    # Locked mode from the selector (None = auto-detect from the question).
+    session["prior"]["forced_mode"] = _MODE_MAP.get(mode_choice)
     config = {"configurable": {"thread_id": session["thread_id"]}}
     history = history + [{"role": "user", "content": user_msg}]
 
@@ -98,7 +113,9 @@ def step(user_msg: str, history: list, session: dict):
                 # The user's message is the answer to the confirmation prompt.
                 result = GRAPH.invoke(Command(resume=user_msg), config)
             else:
-                result = GRAPH.invoke(new_state(user_msg, session["prior"]), config)
+                st = new_state(user_msg, session["prior"])
+                st["forced_mode"] = _MODE_MAP.get(mode_choice)
+                result = GRAPH.invoke(st, config)
     except Exception as exc:  # never let the UI hard-crash mid-demo
         result = {"final_response": f"Something went wrong: {exc}"}
 
@@ -144,7 +161,12 @@ with gr.Blocks(title="Research Matching Chatbot") as demo:
         with gr.Tab("Assistant"):
             with gr.Row(equal_height=False):
                 with gr.Column(scale=3):
-                    chatbot = gr.Chatbot(height=430, label="Conversation")
+                    with gr.Row():
+                        mode_radio = gr.Radio(
+                            ["Auto (detect)", "Student", "Professor"], value="Auto (detect)",
+                            label="Mode", info="Auto reads it from your question; or lock one.",
+                            scale=1)
+                    chatbot = gr.Chatbot(height=390, label="Conversation")
                     with gr.Row():
                         txt = gr.Textbox(placeholder="Ask about faculty, research trends, or collaboration…",
                                          scale=8, show_label=False, autofocus=True, container=False)
@@ -182,10 +204,10 @@ with gr.Blocks(title="Research Matching Chatbot") as demo:
             " &nbsp;|&nbsp; Built by Vaishnav Koka and Pk Bhargavi</div>")
 
     outputs = [chatbot, trace, session, yes_btn, no_btn, txt]
-    send.click(step, [txt, chatbot, session], outputs)
-    txt.submit(step, [txt, chatbot, session], outputs)
-    yes_btn.click(lambda h, s: step("yes", h, s), [chatbot, session], outputs)
-    no_btn.click(lambda h, s: step("no", h, s), [chatbot, session], outputs)
+    send.click(step, [txt, chatbot, session, mode_radio], outputs)
+    txt.submit(step, [txt, chatbot, session, mode_radio], outputs)
+    yes_btn.click(lambda h, s, m: step("yes", h, s, m), [chatbot, session, mode_radio], outputs)
+    no_btn.click(lambda h, s, m: step("no", h, s, m), [chatbot, session, mode_radio], outputs)
     clear.click(reset, None, outputs)
     graph_btn.click(build_graph_view, [graph_topic], [graph_img, graph_summary])
     graph_topic.submit(build_graph_view, [graph_topic], [graph_img, graph_summary])

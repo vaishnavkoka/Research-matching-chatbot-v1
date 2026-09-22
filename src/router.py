@@ -87,6 +87,14 @@ def classify_intent(user_query: str, prior_mode: str, last_results: list) -> dic
                 "topic": topic, "focus_faculty": last_results[idx]["name"],
                 "ordinal": ordinal, "confident": True}
 
+    # --- professor: workload check ("how many projects does Dr. X have?") ---
+    if any(p in low for p in ("how many project", "workload", "how loaded", "how busy",
+                              "has capacity", "have capacity", "who is free", "who's free",
+                              "available to supervise", "free this semester", "already has",
+                              "who can take", "capacity to", "how many students")):
+        return {"mode": "professor", "intent": "workload_check", "topic": topic,
+                "focus_faculty": faculty, "ordinal": None, "confident": True}
+
     # --- student: project ideas ("what project could I do on X?") ---
     # Checked before who_works_on because that path also matches "project on".
     if any(p in low for p in ("what project", "which project", "project idea", "project ideas",

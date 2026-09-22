@@ -4,6 +4,8 @@ it fetches live citation data.
 """
 from __future__ import annotations
 
+import time
+
 import requests
 
 from src.config import SEMANTIC_SCHOLAR_API_KEY
@@ -17,23 +19,37 @@ def _headers() -> dict:
 
 
 def search_papers(topic: str, limit: int = 5) -> list[dict]:
-    """Return recent, highly-cited papers for a topic with real citation counts."""
-    try:
-        resp = requests.get(
-            f"{_BASE}/paper/search",
-            params={
-                "query": topic,
-                "limit": limit,
-                "fields": "title,abstract,year,citationCount,authors,url",
-                "sort": "citationCount:desc",
-            },
-            headers=_headers(),
-            timeout=_TIMEOUT,
-        )
-        resp.raise_for_status()
-        data = resp.json().get("data", []) or []
-    except Exception as exc:
-        return [{"error": f"Semantic Scholar unavailable: {exc}"}]
+    """Return recent, highly-cited papers for a topic with real citation counts.
+    Retries a couple of times on transient rate-limit / server errors, since the
+    free tier occasionally throttles requests."""
+    data = None
+    last_exc = None
+    for attempt in range(3):
+        try:
+            resp = requests.get(
+                f"{_BASE}/paper/search",
+                params={
+                    "query": topic,
+                    "limit": limit,
+                    "fields": "title,abstract,year,citationCount,authors,url",
+                    "sort": "citationCount:desc",
+                },
+                headers=_headers(),
+                timeout=_TIMEOUT,
+            )
+            if resp.status_code in (429, 500, 502, 503, 504) and attempt < 2:
+                time.sleep(1.5 * (attempt + 1))
+                continue
+            resp.raise_for_status()
+            data = resp.json().get("data", []) or []
+            break
+        except Exception as exc:
+            last_exc = exc
+            if attempt < 2:
+                time.sleep(1.5 * (attempt + 1))
+                continue
+    if data is None:
+        return [{"error": f"Semantic Scholar unavailable: {last_exc}"}]
 
     papers = []
     for p in data:

@@ -31,13 +31,17 @@ def intent_router(state: ResearchState) -> ResearchState:
     print("\n[NODE] IntentRouter")
     r = classify_intent(state["user_query"], state.get("current_mode", "student"),
                         state.get("last_results", []))
-    state["current_mode"] = r["mode"]
+    # A locked mode (from the UI selector / CLI :mode) wins over auto-detection;
+    # it drives tone and the displayed persona. Routing still follows the intent.
+    forced = state.get("forced_mode")
+    state["current_mode"] = forced if forced in ("student", "professor") else r["mode"]
     state["intent"] = r["intent"]
     state["topic"] = r["topic"] or state.get("topic")
     if r["focus_faculty"]:
         state["focus_faculty"] = r["focus_faculty"]
-    elif r["intent"] in ("who_works_on", "trend_analysis"):
-        # Fresh topic-centric query: don't inherit a previous faculty anchor.
+    elif r["intent"] in ("who_works_on", "trend_analysis", "workload_check", "project_ideas"):
+        # Fresh topic-centric query: don't inherit a previous faculty anchor
+        # (e.g. "who has capacity?" must list all, not repeat the last professor).
         state["focus_faculty"] = None
 
     target = {
@@ -45,6 +49,7 @@ def intent_router(state: ResearchState) -> ResearchState:
         "faculty_detail": "scoped_lookup",
         "next_match": "scoped_lookup",
         "project_ideas": "project_suggestion",
+        "workload_check": "workload",
         "trend_analysis": "web_trends",
         "collaboration": "web_trends",
         "gap_analysis": "web_trends",
@@ -106,8 +111,42 @@ def project_suggestion(state: ResearchState) -> ResearchState:
     _log(state, f"TOOL Semantic Scholar: papers on {topic!r}")
     papers = search_papers(topic, limit=3)
     state["api_results"] = {"semantic_scholar": papers}
-    state["analysis"] = _llm_or_template_projects(state, topic, faculty, papers)
+    # Fold in the gap signal: how well the department already covers this topic.
+    best = max((f["score"] for f in faculty), default=0.0)
+    coverage = ("well-covered here" if best >= 45 else
+                ("thinly covered — a good niche" if best >= 30 else
+                 "a gap — high-impact, low-competition"))
+    _log(state, f"coverage signal: best-match {best}% -> {coverage}")
+    state["analysis"] = _llm_or_template_projects(state, topic, faculty, papers, coverage)
     _log(state, "generated project ideas")
+    return state
+
+
+# --------------------------------------------------------------------------- #
+# 3c. WorkloadCheck — report a professor's current supervision load / capacity.
+# --------------------------------------------------------------------------- #
+def workload_check(state: ResearchState) -> ResearchState:
+    print("[NODE] WorkloadCheck")
+
+    def _cap(n: int) -> str:
+        return ("at capacity" if n >= 4 else
+                "moderately loaded" if n == 3 else "has room to take on more")
+
+    name = state.get("focus_faculty")
+    prof = get_by_name(name) if name else None
+    if prof:
+        n = prof["active_projects"]
+        _log(state, f"workload lookup: {prof['name']} = {n} projects")
+        state["analysis"] = (f"{prof['name']} ({prof['subfield']}) currently supervises "
+                             f"{n} active project(s) this semester — {_cap(n)}.")
+    else:
+        _log(state, "listing all faculty by current workload")
+        ranked = sorted(all_profiles(), key=lambda f: f["active_projects"])
+        lines = ["Faculty by current workload (most availability first):"]
+        for f in ranked:
+            lines.append(f"   - {f['name']} ({f['subfield']}): {f['active_projects']} "
+                         f"active projects — {_cap(f['active_projects'])}")
+        state["analysis"] = "\n".join(lines)
     return state
 
 
@@ -413,28 +452,31 @@ def _llm_or_template_matching(state, topic, anchor, partners) -> str:
             f"Note: {top['name']} has {top['active_projects']} active projects.")
 
 
-def _llm_or_template_projects(state, topic, faculty, papers) -> str:
-    fac = "\n".join(f"- {f['name']} ({f['subfield']}): {f['areas']}" for f in faculty)
+def _llm_or_template_projects(state, topic, faculty, papers, coverage="") -> str:
+    fac = "\n".join(f"- {f['name']} ({f['subfield']}, {f['score']}% match): {f['areas']}"
+                    for f in faculty)
     pap = "\n".join(f"- {p['title']} ({p.get('year')}, {p.get('citations')} cites)"
                     for p in papers if "title" in p)
     llm = complete(
         system="You suggest concrete, feasible student research projects. " + _tone(state),
-        prompt=(f"Topic: {topic}\nFaculty who could guide (with expertise):\n{fac}\n\n"
+        prompt=(f"Topic: {topic}\nDepartmental coverage of this topic: {coverage}.\n"
+                f"Faculty who could guide (with topical match %):\n{fac}\n\n"
                 f"Recent papers on the topic:\n{pap}\n\n"
                 "Propose exactly 3 concrete project ideas a student could realistically "
-                "pursue on this topic. For each idea give: a short title, one or two "
-                "sentences on what to build or investigate, and which faculty member to "
-                "approach and why. Keep it practical and encouraging."),
+                "pursue. For each: a short title, one or two sentences on what to build or "
+                "investigate, and which faculty member to approach and why. If coverage is "
+                "thin or a gap, lean into that as an opportunity. Keep it practical and encouraging."),
         max_tokens=430,
     )
+    head = f"Project ideas for '{topic}'  (department coverage: {coverage}):\n\n"
     if llm:
-        return f"Project ideas for '{topic}':\n\n{llm}"
+        return head + llm
     ideas = []
     for i, f in enumerate(faculty, 1):
         area = f["areas"].split(",")[0].strip()
         ideas.append(f"{i}. Build something applying {area}. Approach {f['name']} "
                      f"({f['subfield']}), whose work covers {f['areas']}.")
-    return f"Project ideas for '{topic}':\n\n" + "\n".join(ideas)
+    return head + "\n".join(ideas)
 
 
 def _llm_or_template_gap(state, topic, faculty, papers, coverage) -> str:

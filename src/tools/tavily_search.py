@@ -26,7 +26,7 @@ def web_trends(topic: str, max_results: int = 5) -> list[dict]:
     try:
         resp = client.search(
             query=f"latest research trends and breakthroughs in {topic} 2025 2026",
-            search_depth="advanced",
+            search_depth="basic",   # basic is much faster than advanced; plenty for trends
             max_results=max_results,
         )
         return [

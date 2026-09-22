@@ -67,6 +67,8 @@ _MODELS = {
     "gemini": ("gemini-2.5-flash-lite", "gemini-2.5-flash-lite"),
     "none": ("", ""),
 }
+# Public map so the LLM layer can pick a fallback provider's models too.
+PROVIDER_MODELS = _MODELS
 # Allow explicit overrides from .env.
 MODEL_ROUTER = _env("MODEL_ROUTER") or _MODELS[LLM_PROVIDER][0]
 MODEL_SYNTH = _env("MODEL_SYNTH") or _MODELS[LLM_PROVIDER][1]

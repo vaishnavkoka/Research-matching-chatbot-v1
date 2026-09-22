@@ -9,6 +9,7 @@ class ResearchState(TypedDict, total=False):
     user_query: str
     messages: List[dict]          # [{role, content}, ...]
     current_mode: str             # "student" | "professor"
+    forced_mode: Optional[str]    # if set (UI/CLI), locks the mode instead of auto-detect
 
     # --- routing ---
     intent: str                   # who_works_on | faculty_detail | next_match |
@@ -43,6 +44,7 @@ def new_state(user_query: str, prior: Optional[ResearchState] = None) -> Researc
         user_query=user_query,
         messages=prior.get("messages", []),
         current_mode=prior.get("current_mode", "student"),
+        forced_mode=prior.get("forced_mode"),
         intent="",
         routing_target="",
         topic=None,

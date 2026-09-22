@@ -15,7 +15,7 @@ import time
 
 import requests
 
-from src.config import (GROQ_API_KEY, GEMINI_API_KEY,
+from src.config import (GROQ_API_KEY, GEMINI_API_KEY, PROVIDER_MODELS,
                         LLM_ENABLED, LLM_PROVIDER, MODEL_SYNTH, MODEL_ROUTER)
 
 _TIMEOUT = 30
@@ -65,12 +65,19 @@ def _gemini(prompt: str, system: str, model: str, max_tokens: int, temperature: 
                              "thinkingConfig": {"thinkingBudget": 0}},
     }
     headers = {"x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json"}
-    # One short retry smooths transient per-minute rate limits. A per-day quota
-    # won't recover here, so we cap the wait and give up quickly to the fallback.
+    # Fail fast on a 429 (daily quota won't recover, so don't stall — the provider
+    # chain falls back to Groq instantly). Only a transient 5xx gets one quick retry.
+    resp = None
     for attempt in range(2):
-        resp = requests.post(url, headers=headers, json=payload, timeout=_TIMEOUT)
-        if resp.status_code == 429 and attempt == 0:
-            time.sleep(3)
+        try:
+            resp = requests.post(url, headers=headers, json=payload, timeout=_TIMEOUT)
+        except requests.RequestException:
+            if attempt == 0:
+                time.sleep(0.5)
+                continue
+            raise
+        if resp.status_code in (500, 502, 503, 504) and attempt == 0:
+            time.sleep(0.5)
             continue
         break
     resp.raise_for_status()
@@ -82,28 +89,59 @@ def _gemini(prompt: str, system: str, model: str, max_tokens: int, temperature: 
 _DISPATCH = {"groq": _groq, "gemini": _gemini}
 
 
+def _provider_chain() -> list[str]:
+    """Primary provider first, then any other configured provider as a fallback —
+    so a per-day quota (e.g. Gemini 429) automatically rolls over to Groq."""
+    order = []
+    if LLM_PROVIDER in _DISPATCH:
+        order.append(LLM_PROVIDER)
+    for prov, key in (("gemini", GEMINI_API_KEY), ("groq", GROQ_API_KEY)):
+        if key and prov in _DISPATCH and prov not in order:
+            order.append(prov)
+    return order
+
+
+# A provider that just failed (esp. with a 429) is skipped for a while, so we
+# don't pay the round-trip to a quota-dead provider on every single turn.
+_cooldown: dict[str, float] = {}
+
+
+def _live_chain() -> list[str]:
+    now = time.time()
+    chain = _provider_chain()
+    live = [p for p in chain if _cooldown.get(p, 0.0) <= now]
+    return live or chain  # if everything is cooling down, still try the primary
+
+
 # --------------------------------------------------------------------------- #
 # Public interface
 # --------------------------------------------------------------------------- #
-def complete(prompt: str, system: str = "", model: str | None = None,
+def complete(prompt: str, system: str = "", role: str = "synth",
              max_tokens: int = 900, temperature: float = 0.3) -> str | None:
-    """Single-shot completion. Returns None if the LLM is unavailable or errors."""
+    """Single-shot completion. Tries the primary provider, then falls back to any
+    other configured provider. A failing provider is put on cooldown so later turns
+    skip it. Returns None only if every provider fails."""
     if not LLM_ENABLED:
         return None
     system = system or "You are a concise, helpful research-matching assistant."
-    fn = _DISPATCH.get(LLM_PROVIDER)
-    if fn is None:
-        return None
-    try:
-        return fn(prompt, system, model or MODEL_SYNTH, max_tokens, temperature)
-    except Exception as exc:  # network/key/credit/rate-limit — stay graceful
-        _warn_once(exc)
-        return None
+    last_exc = None
+    for prov in _live_chain():
+        model = PROVIDER_MODELS[prov][0 if role == "router" else 1]
+        try:
+            return _DISPATCH[prov](prompt, system, model, max_tokens, temperature)
+        except Exception as exc:  # try the next provider (quota / network / key)
+            last_exc = exc
+            # 429 = quota, likely won't recover soon → long cooldown; else brief.
+            _cooldown[prov] = time.time() + (900 if "429" in str(exc) else 20)
+            continue
+    if last_exc is not None:
+        _warn_once(last_exc)
+    return None
 
 
 def classify(prompt: str, system: str) -> str | None:
-    """Cheap router disambiguation using the fast model."""
-    return complete(prompt, system=system, model=MODEL_ROUTER,
+    """Cheap router disambiguation using the fast model of whichever provider answers."""
+    return complete(prompt, system=system, role="router",
                     max_tokens=30, temperature=0.0)
 
 

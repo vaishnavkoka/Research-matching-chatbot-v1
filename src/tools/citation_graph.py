@@ -9,6 +9,7 @@ Returns (image_path, markdown_summary). Real live data, no mock.
 from __future__ import annotations
 
 import textwrap
+import time
 from pathlib import Path
 
 import requests
@@ -24,10 +25,30 @@ def _headers() -> dict:
     return {"x-api-key": SEMANTIC_SCHOLAR_API_KEY} if SEMANTIC_SCHOLAR_API_KEY else {}
 
 
-def _get(path: str, params: dict) -> dict:
-    r = requests.get(f"{_BASE}/{path}", params=params, headers=_headers(), timeout=_TIMEOUT)
-    r.raise_for_status()
-    return r.json()
+def _get(path: str, params: dict, attempts: int = 5) -> dict:
+    """GET with retry/backoff — Semantic Scholar rate-limits (429) aggressively,
+    and this tool makes several calls in a row."""
+    last = None
+    for i in range(attempts):
+        r = requests.get(f"{_BASE}/{path}", params=params, headers=_headers(), timeout=_TIMEOUT)
+        if r.status_code in (429, 500, 502, 503, 504):
+            last = r
+            time.sleep(1.2 * (i + 1))
+            continue
+        r.raise_for_status()
+        return r.json()
+    if last is not None:
+        last.raise_for_status()
+    return {}
+
+
+def _get_safe(path: str, params: dict) -> dict:
+    """Like _get but never raises — used for the optional references/citations so a
+    partial rate-limit still yields a graph."""
+    try:
+        return _get(path, params)
+    except Exception:
+        return {}
 
 
 def _short(title: str, n: int = 34) -> str:
@@ -41,21 +62,28 @@ def build_citation_graph(topic: str, max_refs: int = 6, max_cites: int = 6):
         return None, "Enter a topic to build its citation graph."
 
     # 1. Anchor = the most-cited paper for the topic.
-    search = _get("paper/search", {
-        "query": topic, "limit": 1,
-        "fields": "title,year,citationCount,authors", "sort": "citationCount:desc",
-    })
+    try:
+        search = _get("paper/search", {
+            "query": topic, "limit": 1,
+            "fields": "title,year,citationCount,authors", "sort": "citationCount:desc",
+        })
+    except Exception:
+        return None, ("Semantic Scholar is rate-limiting right now — please click "
+                      "\"Build graph\" again in a few seconds.")
     data = search.get("data") or []
     if not data:
         return None, f"No papers found on Semantic Scholar for '{topic}'."
     anchor = data[0]
     pid = anchor["paperId"]
 
-    # 2. What it cites (references) and what cites it (citations).
-    refs = _get(f"paper/{pid}/references",
-                {"fields": "title,year", "limit": max_refs}).get("data", []) or []
-    cites = _get(f"paper/{pid}/citations",
-                 {"fields": "title,year", "limit": max_cites}).get("data", []) or []
+    # 2. What it cites (references) and what cites it (citations). Tolerant + spaced
+    #    out so a partial rate-limit still yields a usable graph.
+    time.sleep(0.4)
+    refs = _get_safe(f"paper/{pid}/references",
+                     {"fields": "title,year", "limit": max_refs}).get("data", []) or []
+    time.sleep(0.4)
+    cites = _get_safe(f"paper/{pid}/citations",
+                      {"fields": "title,year", "limit": max_cites}).get("data", []) or []
 
     # 3. Assemble a directed graph.
     import networkx as nx
